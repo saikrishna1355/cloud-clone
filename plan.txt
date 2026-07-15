@@ -1,0 +1,518 @@
+# Build a Personal Cloud Drive (Next.js + Vercel + AWS S3, No Database)
+
+You are a senior full-stack engineer. Build a production-quality personal cloud storage application using **Next.js 15 (App Router)** and **TypeScript**.
+
+## Goal
+
+Create a self-hosted Google Drive / Notion-like application for a **single user**.
+
+The application will be deployed on **Vercel**.
+
+**Do NOT use any database.**
+
+Instead:
+
+* Store all files in AWS S3.
+* Store all notes in AWS S3.
+* Store all metadata (folders, notes, files, settings) as JSON files inside S3.
+* Authentication should be a simple username/password login using environment variables.
+
+The application should be designed so that replacing the JSON metadata layer with a database later requires minimal changes.
+
+---
+
+# Tech Stack
+
+* Next.js 15
+* TypeScript
+* App Router
+* Tailwind CSS
+* shadcn/ui
+* AWS SDK v3
+* Server Actions where appropriate
+* Route Handlers for APIs
+* React Hook Form
+* Zod validation
+* next-themes
+* React Query (optional)
+* No Prisma
+* No MongoDB
+* No PostgreSQL
+* No Supabase
+* No Firebase
+
+---
+
+# Storage Architecture
+
+Use a single S3 bucket.
+
+Example:
+
+```text
+personal-drive/
+
+metadata/
+    folders.json
+    files.json
+    notes.json
+    settings.json
+
+notes/
+    9af82d.md
+    a8172c.md
+
+uploads/
+    images/
+    documents/
+    videos/
+
+trash/
+```
+
+---
+
+# Metadata Structure
+
+folders.json
+
+```json
+[
+  {
+    "id":"root",
+    "name":"Home",
+    "parentId":null,
+    "createdAt":""
+  }
+]
+```
+
+files.json
+
+```json
+[
+  {
+    "id":"",
+    "name":"Resume.pdf",
+    "folderId":"root",
+    "key":"uploads/documents/file.pdf",
+    "size":123456,
+    "mimeType":"application/pdf",
+    "createdAt":"",
+    "updatedAt":""
+  }
+]
+```
+
+notes.json
+
+```json
+[
+  {
+    "id":"",
+    "title":"Meeting Notes",
+    "folderId":"root",
+    "file":"notes/abc.md",
+    "createdAt":"",
+    "updatedAt":""
+  }
+]
+```
+
+---
+
+# Authentication
+
+Single user only.
+
+Environment variables:
+
+```env
+APP_USERNAME=admin
+APP_PASSWORD_HASH=<bcrypt hash>
+
+JWT_SECRET=<random>
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=
+AWS_BUCKET_NAME=
+```
+
+Requirements:
+
+* Login page
+* Logout
+* JWT stored in HTTP-only cookie
+* Middleware protects all routes except /login
+* Password hashing with bcrypt
+* Session expiration
+
+---
+
+# Dashboard
+
+After login show:
+
+Left Sidebar
+
+* Home
+* Favorites
+* Recent
+* Trash
+
+Folders
+
+Main Area
+
+Grid/List toggle
+
+Breadcrumb
+
+Search
+
+Create Folder
+
+Upload Files
+
+Create Note
+
+Dark Mode
+
+---
+
+# Folder Features
+
+Support:
+
+Create Folder
+
+Rename Folder
+
+Delete Folder
+
+Nested folders
+
+Move folders
+
+Folder breadcrumb
+
+Folder tree
+
+---
+
+# File Features
+
+Upload to S3
+
+Preview images
+
+Preview PDFs
+
+Download
+
+Rename
+
+Move
+
+Delete
+
+Restore
+
+File size
+
+File type icon
+
+Copy link
+
+Drag & Drop upload
+
+Progress bar
+
+---
+
+# Notes
+
+Notes are Markdown files stored in S3.
+
+Features:
+
+Create
+
+Edit
+
+Delete
+
+Autosave
+
+Preview Markdown
+
+Syntax Highlighting
+
+Images inside notes
+
+Attachments
+
+Word count
+
+Last edited
+
+---
+
+# Search
+
+Search should include:
+
+Folder names
+
+File names
+
+Note titles
+
+Note contents
+
+Since there is no database:
+
+Download metadata JSON
+
+Perform in-memory search
+
+Return results
+
+---
+
+# Trash
+
+Deleting should:
+
+Move files into trash/
+
+Update metadata
+
+Allow Restore
+
+Permanent Delete
+
+---
+
+# Settings
+
+Theme
+
+Storage usage
+
+Bucket information
+
+App version
+
+Export metadata
+
+Import metadata
+
+---
+
+# AWS Layer
+
+Create a reusable S3 service.
+
+Functions:
+
+uploadFile()
+
+downloadFile()
+
+deleteFile()
+
+moveFile()
+
+copyFile()
+
+listObjects()
+
+readJson()
+
+writeJson()
+
+createFolder()
+
+deleteFolder()
+
+The rest of the application must never directly use the AWS SDK.
+
+Everything goes through this service.
+
+---
+
+# Metadata Layer
+
+Create a repository abstraction.
+
+Example:
+
+FolderRepository
+
+FileRepository
+
+NoteRepository
+
+Internally these repositories read/write JSON from S3.
+
+Later they can be replaced with a database without changing business logic.
+
+---
+
+# UI
+
+Modern minimal design similar to:
+
+Google Drive
+
+Notion
+
+Linear
+
+Use:
+
+shadcn/ui
+
+Lucide Icons
+
+Responsive
+
+Keyboard shortcuts
+
+Context menus
+
+Loading skeletons
+
+Empty states
+
+Toast notifications
+
+---
+
+# Security
+
+Validate uploads
+
+Limit file size
+
+Sanitize filenames
+
+Prevent path traversal
+
+CSRF protection
+
+Rate-limit login
+
+Secure cookies
+
+Never expose AWS credentials to the client
+
+All S3 operations must happen server-side.
+
+---
+
+# Performance
+
+Cache metadata in memory where possible.
+
+Minimize S3 requests.
+
+Use optimistic UI updates.
+
+Lazy-load previews.
+
+Use streaming where appropriate.
+
+---
+
+# Code Quality
+
+Follow clean architecture.
+
+Separate:
+
+components/
+
+lib/
+
+services/
+
+repositories/
+
+types/
+
+hooks/
+
+utils/
+
+actions/
+
+Avoid duplicated code.
+
+Use strict TypeScript.
+
+Write reusable components.
+
+---
+
+# Documentation
+
+Generate:
+
+README.md
+
+Installation guide
+
+Deployment guide for Vercel
+
+AWS IAM policy
+
+Environment variables
+
+Architecture diagram
+
+Folder structure explanation
+
+---
+
+# Bonus Features
+
+Implement if possible:
+
+Image gallery
+
+Video player
+
+Audio player
+
+Markdown editor
+
+ZIP download
+
+File drag-and-drop between folders
+
+Favorites
+
+Pinned folders
+
+Recent files
+
+Duplicate file
+
+Shareable read-only links with expiration
+
+Keyboard shortcuts
+
+Storage usage charts
+
+---
+
+# Deliverables
+
+Build a complete, production-ready application.
+
+The code should be modular, scalable, and easy to migrate to a relational database later without major refactoring.
+
+Generate the project one feature at a time with clear commits, ensuring every feature works before moving to the next.
