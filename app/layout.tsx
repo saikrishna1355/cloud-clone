@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cloud Drive",
-  description: "Personal cloud storage",
+  title: "Sai Share",
+  description: "Your personal cloud drive",
 };
 
 export default function RootLayout({

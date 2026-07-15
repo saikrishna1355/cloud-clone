@@ -6,8 +6,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-auto">{children}</main>
-      <Toaster richColors />
+      {/* pt-14 on mobile for top bar, pb-16 for bottom nav */}
+      <main className="flex-1 overflow-auto pt-14 pb-16 md:pt-0 md:pb-0">
+        {children}
+      </main>
+      <Toaster richColors position="top-center" />
       <ExpiryChecker />
     </div>
   );

@@ -7,8 +7,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CloudIcon } from "lucide-react";
+import { CloudIcon, Lock } from "lucide-react";
 
 const schema = z.object({
   username: z.string().min(1),
@@ -37,32 +36,53 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-2">
-            <CloudIcon className="h-10 w-10 text-primary" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="h-14 w-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg mb-4">
+            <CloudIcon className="h-8 w-8 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">Cloud Drive</CardTitle>
-        </CardHeader>
-        <CardContent>
+          <h1 className="text-2xl font-bold tracking-tight">Sai Share</h1>
+          <p className="text-sm text-muted-foreground mt-1">Your personal cloud drive</p>
+        </div>
+
+        {/* Form card */}
+        <div className="bg-card border rounded-2xl shadow-sm p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <Lock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">Sign in to continue</span>
+          </div>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label htmlFor="username">Username</Label>
-              <Input id="username" {...register("username")} autoComplete="username" />
+              <Input
+                id="username"
+                {...register("username")}
+                autoComplete="username"
+                className="h-10"
+                placeholder="Enter username"
+              />
               {errors.username && <p className="text-xs text-destructive">{errors.username.message}</p>}
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...register("password")} autoComplete="current-password" />
+              <Input
+                id="password"
+                type="password"
+                {...register("password")}
+                autoComplete="current-password"
+                className="h-10"
+                placeholder="Enter password"
+              />
               {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
             </div>
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button type="submit" className="w-full h-10 mt-2" disabled={isSubmitting}>
               {isSubmitting ? "Signing in…" : "Sign in"}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

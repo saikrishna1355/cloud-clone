@@ -3,17 +3,12 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Search, FolderPlus, Upload, FileText, LayoutGrid, List } from "lucide-react";
+import { Search, FolderPlus, Upload, FileText, LayoutGrid, List, Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface ToolbarProps {
   folderId: string;
@@ -29,6 +24,7 @@ export function Toolbar({ folderId, view, onViewChange }: ToolbarProps) {
   const [folderName, setFolderName] = useState("");
   const [noteTitle, setNoteTitle] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleSearch(e: React.FormEvent) {
@@ -43,14 +39,8 @@ export function Toolbar({ folderId, view, onViewChange }: ToolbarProps) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: folderName.trim(), parentId: folderId }),
     });
-    if (res.ok) {
-      toast.success("Folder created");
-      setFolderDialog(false);
-      setFolderName("");
-      router.refresh();
-    } else {
-      toast.error("Failed to create folder");
-    }
+    if (res.ok) { toast.success("Folder created"); setFolderDialog(false); setFolderName(""); router.refresh(); }
+    else toast.error("Failed to create folder");
   }
 
   async function createNote() {
@@ -62,19 +52,16 @@ export function Toolbar({ folderId, view, onViewChange }: ToolbarProps) {
     });
     if (res.ok) {
       const note = await res.json();
-      toast.success("Note created");
-      setNoteDialog(false);
-      setNoteTitle("");
+      toast.success("Note created"); setNoteDialog(false); setNoteTitle("");
       router.push(`/notes/${note.id}`);
-    } else {
-      toast.error("Failed to create note");
-    }
+    } else toast.error("Failed to create note");
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     setUploading(true);
+    setFabOpen(false);
     try {
       for (const file of files) {
         const res = await fetch("/api/files/upload", {
@@ -95,42 +82,87 @@ export function Toolbar({ folderId, view, onViewChange }: ToolbarProps) {
   }
 
   return (
-    <div className="flex items-center gap-2 p-4 border-b">
-      <form onSubmit={handleSearch} className="flex-1 max-w-sm">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search…"
-            className="pl-8"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+    <>
+      <div className="flex items-center gap-2 px-4 py-3 border-b bg-card/50 backdrop-blur sticky top-0 z-10">
+        {/* Search */}
+        <form onSubmit={handleSearch} className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search files, folders, notes…"
+              className="pl-9 h-9 bg-muted/50 border-0 focus-visible:ring-1"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </form>
+
+        {/* Desktop action buttons */}
+        <div className="hidden md:flex items-center gap-1.5">
+          <Button variant="outline" size="sm" className="h-9" onClick={() => setFolderDialog(true)}>
+            <FolderPlus className="h-4 w-4 mr-1.5" /> New Folder
+          </Button>
+          <Button variant="outline" size="sm" className="h-9" onClick={() => fileRef.current?.click()} disabled={uploading}>
+            <Upload className="h-4 w-4 mr-1.5" /> {uploading ? "Uploading…" : "Upload"}
+          </Button>
+          <Button variant="outline" size="sm" className="h-9" onClick={() => setNoteDialog(true)}>
+            <FileText className="h-4 w-4 mr-1.5" /> New Note
+          </Button>
         </div>
-      </form>
 
-      <Button variant="outline" size="sm" onClick={() => setFolderDialog(true)}>
-        <FolderPlus className="h-4 w-4 mr-1" /> New Folder
-      </Button>
+        {/* View toggle */}
+        <div className="flex border rounded-lg overflow-hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn("h-9 w-9 rounded-none", view === "grid" && "bg-muted")}
+            onClick={() => onViewChange("grid")}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn("h-9 w-9 rounded-none", view === "list" && "bg-muted")}
+            onClick={() => onViewChange("list")}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
 
-      <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
-        <Upload className="h-4 w-4 mr-1" /> {uploading ? "Uploading…" : "Upload"}
-      </Button>
-      <input ref={fileRef} type="file" multiple className="hidden" onChange={handleUpload} />
-
-      <Button variant="outline" size="sm" onClick={() => setNoteDialog(true)}>
-        <FileText className="h-4 w-4 mr-1" /> New Note
-      </Button>
-
-      <div className="flex border rounded-md overflow-hidden">
-        <Button variant={view === "grid" ? "default" : "ghost"} size="sm" className="rounded-none" onClick={() => onViewChange("grid")}>
-          <LayoutGrid className="h-4 w-4" />
-        </Button>
-        <Button variant={view === "list" ? "default" : "ghost"} size="sm" className="rounded-none" onClick={() => onViewChange("list")}>
-          <List className="h-4 w-4" />
-        </Button>
+        <input ref={fileRef} type="file" multiple className="hidden" onChange={handleUpload} />
       </div>
 
-      {/* Create Folder Dialog */}
+      {/* Mobile FAB */}
+      <div className="md:hidden fixed bottom-20 right-4 z-50 flex flex-col items-end gap-2">
+        {fabOpen && (
+          <>
+            <div className="fixed inset-0 z-[-1]" onClick={() => setFabOpen(false)} />
+            {[
+              { icon: FolderPlus, label: "New Folder", action: () => { setFabOpen(false); setFolderDialog(true); } },
+              { icon: Upload, label: uploading ? "Uploading…" : "Upload File", action: () => { setFabOpen(false); fileRef.current?.click(); } },
+              { icon: FileText, label: "New Note", action: () => { setFabOpen(false); setNoteDialog(true); } },
+            ].map(({ icon: Icon, label, action }) => (
+              <button
+                key={label}
+                onClick={action}
+                className="flex items-center gap-2 bg-card border shadow-lg rounded-full px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                <Icon className="h-4 w-4 text-primary" />
+                {label}
+              </button>
+            ))}
+          </>
+        )}
+        <button
+          onClick={() => setFabOpen(!fabOpen)}
+          className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center transition-transform active:scale-95"
+        >
+          {fabOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
+        </button>
+      </div>
+
+      {/* Dialogs */}
       <Dialog open={folderDialog} onOpenChange={setFolderDialog}>
         <DialogContent>
           <DialogHeader><DialogTitle>New Folder</DialogTitle></DialogHeader>
@@ -145,7 +177,6 @@ export function Toolbar({ folderId, view, onViewChange }: ToolbarProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Create Note Dialog */}
       <Dialog open={noteDialog} onOpenChange={setNoteDialog}>
         <DialogContent>
           <DialogHeader><DialogTitle>New Note</DialogTitle></DialogHeader>
@@ -159,6 +190,6 @@ export function Toolbar({ folderId, view, onViewChange }: ToolbarProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
