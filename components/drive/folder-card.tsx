@@ -10,7 +10,6 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 interface FolderCardProps {
   folder: FolderType;
@@ -56,8 +55,8 @@ export function FolderCard({ folder, view }: FolderCardProps) {
 
   const content = view === "grid" ? (
     <div
-      className="group flex flex-col items-center gap-2 p-3 rounded-xl border bg-card hover:bg-muted/60 hover:border-primary/20 hover:shadow-sm transition-all duration-150 cursor-pointer select-none"
-      onDoubleClick={() => router.push(`/folder/${folder.id}`)}
+      className="flex flex-col items-center gap-2 p-3 rounded-xl border bg-card hover:bg-muted/60 hover:border-primary/20 hover:shadow-sm transition-all duration-150 cursor-pointer select-none"
+      onClick={() => router.push(`/folder/${folder.id}`)}
     >
       <div className="h-12 w-12 rounded-xl bg-yellow-500/10 flex items-center justify-center mt-1">
         <Folder className="h-7 w-7 text-yellow-500" />
@@ -71,7 +70,7 @@ export function FolderCard({ folder, view }: FolderCardProps) {
   ) : (
     <div
       className="flex items-center gap-3 px-3 py-2.5 rounded-lg border bg-card hover:bg-muted/60 hover:border-primary/20 transition-all cursor-pointer select-none"
-      onDoubleClick={() => router.push(`/folder/${folder.id}`)}
+      onClick={() => router.push(`/folder/${folder.id}`)}
     >
       <div className="h-8 w-8 rounded-lg bg-yellow-500/10 flex items-center justify-center shrink-0">
         <Folder className="h-4 w-4 text-yellow-500" />

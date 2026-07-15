@@ -9,6 +9,7 @@ import { FileIcon, formatBytes } from "./file-icon";
 import { SetExpiryDialog, ExpiryBadge } from "./expiry-dialog";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { createPortal } from "react-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,31 +17,43 @@ import { cn } from "@/lib/utils";
 interface FileCardProps {
   file: DriveFile;
   view: "grid" | "list";
+  selected?: boolean;
+  onSelect?: () => void;
 }
 
-export function FileCard({ file, view }: FileCardProps) {
+export function FileCard({ file, view, selected, onSelect }: FileCardProps) {
   const router = useRouter();
   const [renameOpen, setRenameOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [expiryOpen, setExpiryOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
   const [name, setName] = useState(file.name);
+  const isPreviewable = file.mimeType.startsWith("image/") || file.mimeType === "application/pdf";
+  const isImage = file.mimeType.startsWith("image/");
 
-  async function getUrl(): Promise<string> {
-    const res = await fetch(`/api/files/${file.id}`);
-    const { url } = await res.json();
-    return url;
-  }
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isImage) return;
+    fetch(`/api/files/${file.id}`)
+      .then((r) => r.json())
+      .then(({ url }) => setThumbUrl(url))
+      .catch(() => {});
+  }, [file.id, isImage]);
 
-  async function download() {
-    const url = await getUrl();
+  function download() {
     const a = document.createElement("a");
-    a.href = url; a.download = file.name; a.click();
+    a.href = `/api/files/download?id=${file.id}`;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 
   async function preview() {
-    const url = await getUrl();
-    setPreviewUrl(url); setPreviewOpen(true);
+    const res = await fetch(`/api/files/${file.id}`);
+    const { url } = await res.json();
+    setPreviewUrl(url);
+    setPreviewOpen(true);
   }
 
   async function rename() {
@@ -76,21 +89,24 @@ export function FileCard({ file, view }: FileCardProps) {
     });
   }
 
-  const isPreviewable = file.mimeType.startsWith("image/") || file.mimeType === "application/pdf";
-  const isImage = file.mimeType.startsWith("image/");
-
-  // Load thumbnail URL for images in grid view
-  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
-  useEffect(() => {
-    if (!isImage) return;
-    fetch(`/api/files/${file.id}`)
-      .then((r) => r.json())
-      .then(({ url }) => setThumbUrl(url))
-      .catch(() => {});
-  }, [file.id, isImage]);
-
   const content = view === "grid" ? (
-    <div className="group flex flex-col items-center gap-2 p-3 rounded-xl border bg-card hover:bg-muted/60 hover:border-primary/20 hover:shadow-sm transition-all duration-150 cursor-pointer select-none">
+    <div
+      onClick={() => isPreviewable ? preview() : download()}
+      className={cn(
+        "group relative flex flex-col items-center gap-2 p-3 rounded-xl border bg-card hover:bg-muted/60 hover:border-primary/20 hover:shadow-sm transition-all duration-150 cursor-pointer select-none",
+        selected && "border-primary bg-primary/5"
+      )}
+    >
+      {/* Checkbox */}
+      <div
+        className={cn(
+          "absolute top-2 left-2 h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all z-10",
+          selected ? "bg-primary border-primary" : "border-muted-foreground/50 bg-card/80 group-hover:border-primary/70"
+        )}
+        onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
+      >
+        {selected && <svg className="h-3 w-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+      </div>
       <div className="h-28 w-full rounded-lg overflow-hidden bg-muted/50 flex items-center justify-center mt-1">
         {isImage && thumbUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -106,7 +122,23 @@ export function FileCard({ file, view }: FileCardProps) {
       </div>
     </div>
   ) : (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border bg-card hover:bg-muted/60 hover:border-primary/20 transition-all cursor-pointer select-none">
+    <div
+      onClick={() => isPreviewable ? preview() : download()}
+      className={cn(
+        "group relative flex items-center gap-3 px-3 py-2.5 rounded-lg border bg-card hover:bg-muted/60 hover:border-primary/20 transition-all cursor-pointer select-none",
+        selected && "border-primary bg-primary/5"
+      )}
+    >
+      {/* Checkbox */}
+      <div
+        className={cn(
+          "h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+          selected ? "bg-primary border-primary" : "border-muted-foreground/50 bg-card/80 group-hover:border-primary/70"
+        )}
+        onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
+      >
+        {selected && <svg className="h-3 w-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+      </div>
       <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
         <FileIcon mimeType={file.mimeType} className="h-4 w-4 text-blue-500" />
       </div>
@@ -152,17 +184,25 @@ export function FileCard({ file, view }: FileCardProps) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader><DialogTitle>{file.name}</DialogTitle></DialogHeader>
-          {file.mimeType.startsWith("image/") ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={previewUrl} alt={file.name} className="max-h-[70vh] object-contain mx-auto rounded-lg" />
-          ) : (
-            <iframe src={previewUrl} className="w-full h-[70vh] rounded-lg" title={file.name} />
-          )}
-        </DialogContent>
-      </Dialog>
+      {previewOpen && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-50 flex flex-col bg-background">
+          <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
+            <span className="text-sm font-medium truncate pr-4">{file.name}</span>
+            <button onClick={() => setPreviewOpen(false)} className="shrink-0 rounded-md p-1 hover:bg-muted transition-colors">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden flex items-center justify-center bg-black/5 dark:bg-black/40">
+            {file.mimeType.startsWith("image/") ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={previewUrl} alt={file.name} className="max-w-full max-h-full object-contain" />
+            ) : (
+              <iframe src={previewUrl} className="w-full h-full border-0" title={file.name} />
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
 
       <SetExpiryDialog open={expiryOpen} onOpenChange={setExpiryOpen} currentExpiry={file.expiresAt} onSave={saveExpiry} />
     </>
