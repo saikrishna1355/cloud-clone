@@ -64,14 +64,11 @@ export function Toolbar({ folderId, view, onViewChange }: ToolbarProps) {
     setFabOpen(false);
     try {
       for (const file of files) {
-        const res = await fetch("/api/files/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: file.name, mimeType: file.type || "application/octet-stream", size: file.size, folderId }),
-        });
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("folderId", folderId);
+        const res = await fetch("/api/files/upload", { method: "POST", body: formData });
         if (!res.ok) { toast.error(`Failed to upload ${file.name}`); continue; }
-        const { uploadUrl } = await res.json();
-        await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
         toast.success(`Uploaded ${file.name}`);
       }
       router.refresh();
