@@ -3,6 +3,8 @@ import { FileRepository } from "@/repositories/file.repository";
 import { NoteRepository } from "@/repositories/note.repository";
 import { DriveView } from "@/components/drive/drive-view";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [allFolders, allFiles, allNotes] = await Promise.all([
     FolderRepository.findAll(),

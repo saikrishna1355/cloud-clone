@@ -17,6 +17,8 @@ async function buildBreadcrumb(folderId: string, allFolders: Awaited<ReturnType<
   return crumbs;
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function FolderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [allFolders, allFiles, allNotes] = await Promise.all([
