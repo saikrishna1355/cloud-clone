@@ -41,7 +41,7 @@ export function DriveView({ folderId, folders, files, notes, breadcrumb }: Drive
         ) : (
           <div className={cn(
             view === "grid"
-              ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"
+              ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"
               : "flex flex-col gap-1"
           )}>
             {folders.map((f) => <FolderCard key={f.id} folder={f} view={view} />)}

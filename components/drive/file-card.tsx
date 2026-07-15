@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Download, Pencil, Trash2, Star, Eye, Clock } from "lucide-react";
@@ -77,13 +77,29 @@ export function FileCard({ file, view }: FileCardProps) {
   }
 
   const isPreviewable = file.mimeType.startsWith("image/") || file.mimeType === "application/pdf";
+  const isImage = file.mimeType.startsWith("image/");
+
+  // Load thumbnail URL for images in grid view
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isImage) return;
+    fetch(`/api/files/${file.id}`)
+      .then((r) => r.json())
+      .then(({ url }) => setThumbUrl(url))
+      .catch(() => {});
+  }, [file.id, isImage]);
 
   const content = view === "grid" ? (
     <div className="group flex flex-col items-center gap-2 p-3 rounded-xl border bg-card hover:bg-muted/60 hover:border-primary/20 hover:shadow-sm transition-all duration-150 cursor-pointer select-none">
-      <div className="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center mt-1">
-        <FileIcon mimeType={file.mimeType} className="h-7 w-7 text-blue-500" />
+      <div className="h-28 w-full rounded-lg overflow-hidden bg-muted/50 flex items-center justify-center mt-1">
+        {isImage && thumbUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={thumbUrl} alt={file.name} className="h-full w-full object-cover" />
+        ) : (
+          <FileIcon mimeType={file.mimeType} className="h-10 w-10 text-blue-500" />
+        )}
       </div>
-      <p className="text-xs font-medium truncate w-full text-center leading-tight">{file.name}</p>
+      <p className="text-xs font-medium truncate w-full text-center leading-tight px-1">{file.name}</p>
       <div className="flex items-center gap-1 h-4">
         <ExpiryBadge expiresAt={file.expiresAt} />
         {file.isFavorite && <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />}
