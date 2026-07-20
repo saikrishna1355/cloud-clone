@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useUploadQueue } from "@/hooks/use-upload-queue";
+import { UploadQueuePanel } from "@/components/drive/upload-queue-panel";
 
 interface ToolbarProps {
   folderId: string;
@@ -23,9 +25,10 @@ export function Toolbar({ folderId, view, onViewChange }: ToolbarProps) {
   const [noteDialog, setNoteDialog] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [noteTitle, setNoteTitle] = useState("");
-  const [uploading, setUploading] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const { queue, addItems, uploadFiles, clearDone } = useUploadQueue();
+  const uploading = queue.some((i) => i.status === "uploading" || i.status === "pending");
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -60,22 +63,13 @@ export function Toolbar({ folderId, view, onViewChange }: ToolbarProps) {
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    setUploading(true);
     setFabOpen(false);
-    try {
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("folderId", folderId);
-        const res = await fetch("/api/files/upload", { method: "POST", body: formData });
-        if (!res.ok) { toast.error(`Failed to upload ${file.name}`); continue; }
-        toast.success(`Uploaded ${file.name}`);
-      }
-      router.refresh();
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
+    const items = addItems(files);
+    await uploadFiles(files, folderId, items);
+    const failed = items.filter((i) => i.status === "error");
+    if (failed.length) toast.error(`${failed.length} file(s) failed to upload`);
+    router.refresh();
+    if (fileRef.current) fileRef.current.value = "";
   }
 
   return (
@@ -129,6 +123,8 @@ export function Toolbar({ folderId, view, onViewChange }: ToolbarProps) {
 
         <input ref={fileRef} type="file" multiple className="hidden" onChange={handleUpload} />
       </div>
+
+      <UploadQueuePanel queue={queue} onClear={clearDone} />
 
       {/* Mobile FAB */}
       <div className="md:hidden fixed bottom-20 right-4 z-50 flex flex-col items-end gap-2">

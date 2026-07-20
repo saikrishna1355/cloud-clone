@@ -4,7 +4,13 @@ import { uploadFile } from "@/services/s3";
 import { getSession } from "@/lib/auth";
 import path from "path";
 
-const MAX_SIZE = 500 * 1024 * 1024;
+export const config = {
+  api: { bodyParser: false },
+};
+
+export const maxDuration = 300;
+
+const MAX_SIZE = 10 * 1024 * 1024 * 1024; // 10GB
 const ALLOWED_MIME_PREFIXES = ["image/", "video/", "audio/", "application/pdf", "text/", "application/"];
 
 function sanitizeFilename(name: string): string {
