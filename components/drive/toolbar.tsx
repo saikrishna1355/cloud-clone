@@ -60,16 +60,17 @@ export function Toolbar({ folderId, view, onViewChange }: ToolbarProps) {
     } else toast.error("Failed to create note");
   }
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     setFabOpen(false);
-    const items = addItems(files);
-    await uploadFiles(files, folderId, items);
-    const failed = items.filter((i) => i.status === "error");
-    if (failed.length) toast.error(`${failed.length} file(s) failed to upload`);
-    router.refresh();
     if (fileRef.current) fileRef.current.value = "";
+    const items = addItems(files);
+    uploadFiles(files, folderId, items).then(() => {
+      const failed = items.filter((i) => i.status === "error");
+      if (failed.length) toast.error(`${failed.length} file(s) failed to upload`);
+      router.refresh();
+    });
   }
 
   return (
@@ -93,8 +94,8 @@ export function Toolbar({ folderId, view, onViewChange }: ToolbarProps) {
           <Button variant="outline" size="sm" className="h-9" onClick={() => setFolderDialog(true)}>
             <FolderPlus className="h-4 w-4 mr-1.5" /> New Folder
           </Button>
-          <Button variant="outline" size="sm" className="h-9" onClick={() => fileRef.current?.click()} disabled={uploading}>
-            <Upload className="h-4 w-4 mr-1.5" /> {uploading ? "Uploading…" : "Upload"}
+          <Button variant="outline" size="sm" className="h-9" onClick={() => fileRef.current?.click()}>
+            <Upload className="h-4 w-4 mr-1.5" /> Upload
           </Button>
           <Button variant="outline" size="sm" className="h-9" onClick={() => setNoteDialog(true)}>
             <FileText className="h-4 w-4 mr-1.5" /> New Note
